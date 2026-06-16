@@ -88,9 +88,10 @@
             const defaultMsg = "你好，很高兴认识你";
             const CACHE_DURATION = 30 * 24 * 60 * 60 * 1000; 
 
-            // 2. Base64 隐身字典
+            // 2. Base64 隐身字典 (新增苹果端专属协议)
             const webBase = atob("aHR0cHM6Ly93YS5tZS8="); // https://wa.me/
             const intentBase = atob("aW50ZW50Oi8vc2VuZD9waG9uZT0="); // intent://send?phone=
+            const iosAppBase = atob("d2hhdHNhcHA6Ly9zZW5kP3Bob25lPQ=="); // whatsapp://send?phone=
 
             // 3. 分配与缓存逻辑
             const now = new Date().getTime();
@@ -111,17 +112,22 @@
                 localStorage.setItem('support_route_target', JSON.stringify({ target: selectedPhone, timestamp: now }));
             }
 
-            // 4. 设备识别与终极底层协议组装
+            // 4. 终极设备精准识别与协议组装 (彻底抛弃移动端网页)
             const userAgent = navigator.userAgent || navigator.vendor || window.opera;
             const isAndroid = /Android/i.test(userAgent);
+            const isIOS = /iPhone|iPad|iPod/i.test(userAgent);
             const encodedText = encodeURIComponent(defaultMsg);
+            
             let finalUrl = "";
 
             if (isAndroid) {
-                // 安卓设备：使用 intent 协议强行呼叫系统层
+                // 安卓：直接呼叫系统 Intent
                 finalUrl = intentBase + selectedPhone + "&text=" + encodedText + "#Intent;scheme=whatsapp;package=com.whatsapp;end";
+            } else if (isIOS) {
+                // 苹果：绝对不使用 wa.me，直接使用 whatsapp:// 唤醒
+                finalUrl = iosAppBase + selectedPhone + "&text=" + encodedText;
             } else {
-                // iOS / PC 设备：使用 wa.me 配合 target="_top" 突破
+                // 电脑端 (PC)：只能使用网页版
                 finalUrl = webBase + selectedPhone + "?text=" + encodedText;
             }
 
