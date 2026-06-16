@@ -22,75 +22,73 @@
         // ⚙️ 配置区域：请在这里修改你的业务数据
         // ==========================================
 
-        // 1. WhatsApp 号码池（示例配置了3个号码，你可以根据格式随意增加或减少）
-        // 格式：包含国家代码，不加"+"号。务必用英文引号包裹，用英文逗号隔开。
+        // 1. WhatsApp 号码池
         const waNumbers = [
             "60162926498",  // 客服 A
             "60167057443",  // 客服 B
             "60106608613"   // 客服 C
         ];
 
-        // 2. 预设文本消息（用户拉起应用时自动填入输入框的话）
+        // 2. 预设文本消息
         const defaultMessage = "你好，很高兴认识你";
 
         // 3. 缓存有效时间（设定为 30 天，单位为天）
         const cacheDays = 30;
 
         // ==========================================
-        // 🚀 核心逻辑区域：自动分配与缓存（无需修改）
+        // 🚀 核心逻辑区域：设备识别、自动分配与跳转
         // ==========================================
 
         function redirectUser() {
-            // 定义缓存的键名
             const cacheKey = "assigned_whatsapp_target";
             let targetNumber = null;
 
-            // 步骤 1：检查本地是否已经有缓存记录
+            // --- 步骤 1：检查缓存 ---
             const cachedDataStr = localStorage.getItem(cacheKey);
-            
             if (cachedDataStr) {
                 try {
                     const cachedData = JSON.parse(cachedDataStr);
                     const now = new Date().getTime();
-                    
-                    // 检查缓存是否过期
                     if (now < cachedData.expiryTime) {
-                        // 如果没过期，直接使用缓存中的老号码
                         targetNumber = cachedData.phoneNumber;
-                        console.log("命中缓存，跳转至历史分配号码:", targetNumber);
                     }
                 } catch (e) {
-                    console.error("解析缓存失败，将重新分配");
+                    console.error("缓存解析异常");
                 }
             }
 
-            // 步骤 2：如果没有缓存，或缓存已过期，则进行重新分配
+            // --- 步骤 2：分配新号码并缓存 ---
             if (!targetNumber) {
-                // 使用随机数从号码池中抽取一个号码，实现大流量下的平均分配
                 const randomIndex = Math.floor(Math.random() * waNumbers.length);
                 targetNumber = waNumbers[randomIndex];
                 
-                // 计算过期时间的时间戳 (当前时间 + N天的毫秒数)
                 const expiryTimestamp = new Date().getTime() + (cacheDays * 24 * 60 * 60 * 1000);
                 
-                // 将新分配的号码和过期时间写入缓存
-                const newCacheData = {
+                localStorage.setItem(cacheKey, JSON.stringify({
                     phoneNumber: targetNumber,
                     expiryTime: expiryTimestamp
-                };
-                localStorage.setItem(cacheKey, JSON.stringify(newCacheData));
-                console.log("新用户，随机分配号码并缓存:", targetNumber);
+                }));
             }
 
-            // 步骤 3：拼接最终的 WhatsApp 跳转链接
-            // 使用 encodeURIComponent 确保文本中的中文或特殊符号能被正确解析
-            const waLink = `whatsapp://send?phone=${targetNumber}&text=${encodeURIComponent(defaultMessage)}`;
+            // --- 步骤 3：智能设备识别 ---
+            // 通过正则表达式检测 User-Agent 中是否包含常见的移动设备关键词
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            
+            let waLink = "";
+            const encodedMessage = encodeURIComponent(defaultMessage);
 
-            // 步骤 4：执行无感跳转
+            if (isMobile) {
+                // 如果是移动端 -> 使用原生协议强拉起
+                waLink = `whatsapp://send?phone=${targetNumber}&text=${encodedMessage}`;
+            } else {
+                // 如果是 PC 端 -> 使用通用网页协议
+                waLink = `https://wa.me/${targetNumber}?text=${encodedMessage}`;
+            }
+
+            // --- 步骤 4：执行无感跳转 ---
             window.location.replace(waLink);
         }
 
-        // 页面加载后立即执行跳转逻辑
         redirectUser();
     </script>
 
