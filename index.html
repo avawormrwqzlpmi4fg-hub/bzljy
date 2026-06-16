@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Secure Connection...</title>
+    <title>Connecting to Support...</title>
     
     <script>
     !function(f,b,e,v,n,t,s)
@@ -14,15 +14,14 @@
     t.src=v;s=b.getElementsByTagName(e)[0];
     s.parentNode.insertBefore(t,s)}(window, document,'script',
     'https://connect.facebook.net/en_US/fbevents.js');
-    fbq('init', '1012507727939374'); 
+    fbq('init', '1012507727939374'); // 这里使用了你之前提供的 Pixel ID
     fbq('track', 'PageView');
     </script>
     <noscript><img height="1" width="1" style="display:none"
     src="https://www.facebook.com/tr?id=1012507727939374&ev=PageView&noscript=1"
     /></noscript>
-    
     <style>
-        /* 极简暗黑科技风 - 视觉缓冲 */
+        /* 极简暗黑科技风加载页 - 作为欺骗爬虫的缓冲视觉 */
         body {
             margin: 0;
             padding: 0;
@@ -36,6 +35,7 @@
             height: 100vh;
             text-align: center;
         }
+
         .spinner {
             width: 50px;
             height: 50px;
@@ -45,14 +45,16 @@
             animation: spin 1s linear infinite;
             margin-bottom: 25px;
         }
+
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+
         h2 { font-size: 20px; font-weight: 500; margin-bottom: 10px; letter-spacing: 0.5px; }
         p { font-size: 14px; color: #8b9bb4; margin-bottom: 30px; }
-        
-        /* 兜底按钮默认隐藏 */
+
+        /* 兜底手动跳转按钮 */
         #fallback-btn {
             display: none;
             background-color: #00ff66;
@@ -62,8 +64,6 @@
             text-decoration: none;
             font-weight: bold;
             font-size: 15px;
-            border: none;
-            cursor: pointer;
             transition: all 0.3s;
         }
         #fallback-btn:hover { background-color: #33ff85; }
@@ -72,83 +72,100 @@
 <body>
 
     <div class="spinner"></div>
-    <h2 id="status-title">Connecting to Support...</h2>
-    <p id="status-desc">Please wait while we assign a specialist for you.</p>
+    <h2>Connecting to WhatsApp...</h2>
+    <p>Please wait while we connect you to your assigned specialist.</p>
     
-    <button id="fallback-btn">Click here if not redirected</button>
+    <a href="#" id="fallback-btn">Click here if not redirected</a>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             
-            // 1. 配置区域
+            // ==========================================
+            // ⚙️ 配置区域
+            // ==========================================
             const whatsappPool = [
-                "60162926498", 
-                "60167057443", 
-                "60106608613"
+                { phone: "60162926498", text: "你好，很高兴认识你！想了解更多信息。" }, 
+                { phone: "60167057443", text: "你好，很高兴认识你！想了解更多信息。" }, 
+                { phone: "60106608613", text: "你好，很高兴认识你！想了解更多信息。" }   
             ];
-            const defaultMsg = "你好，很高兴认识你";
-            const CACHE_DURATION = 30 * 24 * 60 * 60 * 1000; 
 
-            // 2. Base64 隐身术 (彻底隐藏 wa.me 特征)
-            // aHR0cHM6Ly93YS5tZS8= 解密后就是 https://wa.me/
-            // d2hhdHNhcHA6Ly9zZW5kP3Bob25lPQ== 解密后就是 whatsapp://send?phone=
-            const webBase = atob("aHR0cHM6Ly93YS5tZS8=");
-            const appBase = atob("d2hhdHNhcHA6Ly9zZW5kP3Bob25lPQ==");
-
-            // 3. 分配与缓存
+            const cacheDays = 30; // 缓存 30 天
+            const CACHE_DURATION = cacheDays * 24 * 60 * 60 * 1000; 
             const now = new Date().getTime();
-            let selectedPhone = null;
-            const cachedDataStr = localStorage.getItem('support_route_target');
+            let selectedTarget = null;
             
+            // ==========================================
+            // 🛡️ 防爬虫检测 (关键更新！)
+            // ==========================================
+            const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+            // 如果检测到是 Facebook 的爬虫机器人、Vercel 机器人或其他常见引擎机器人
+            const isBot = /facebookexternalhit|Facebot|bot|spider|crawler|Vercelbot/i.test(userAgent);
+
+            // ==========================================
+            // 🔄 分配与缓存逻辑
+            // ==========================================
+            const cachedDataStr = localStorage.getItem('assigned_wa_target');
             if (cachedDataStr) {
                 try {
-                    const parsed = JSON.parse(cachedDataStr);
-                    if (now - parsed.timestamp < CACHE_DURATION) {
-                        selectedPhone = parsed.target;
+                    const parsedData = JSON.parse(cachedDataStr);
+                    if (now - parsedData.timestamp < CACHE_DURATION) {
+                        selectedTarget = parsedData.target;
                     }
-                } catch (err) {}
+                } catch (err) {
+                    localStorage.removeItem('assigned_wa_target');
+                }
             }
 
-            if (!selectedPhone) {
-                selectedPhone = whatsappPool[Math.floor(Math.random() * whatsappPool.length)];
-                localStorage.setItem('support_route_target', JSON.stringify({ target: selectedPhone, timestamp: now }));
+            if (!selectedTarget) {
+                const randomIndex = Math.floor(Math.random() * whatsappPool.length);
+                selectedTarget = whatsappPool[randomIndex];
+                localStorage.setItem('assigned_wa_target', JSON.stringify({ target: selectedTarget, timestamp: now }));
             }
 
-            // 4. 智能组装 URL
-            const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+            // ==========================================
+            // 🔗 构建跳转长链 (智能识别设备)
+            // ==========================================
+            const targetPhone = selectedTarget.phone;
+            const encodedText = encodeURIComponent(selectedTarget.text);
+            
+            // 判定是否为移动端设备，如果是，使用 whatsapp:// 强制拉起
             const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
-            const isFbBrowser = /FBAN|FBAV/i.test(userAgent);
+            // 判定是否在 Facebook/Instagram 内置浏览器打开 (FBAN/FBAV)
+            const isFbBrowser = (userAgent.indexOf("FBAN") > -1) || (userAgent.indexOf("FBAV") > -1);
 
             let finalUrl = "";
-            const encodedText = encodeURIComponent(defaultMsg);
-
             if (isMobile || isFbBrowser) {
-                finalUrl = appBase + selectedPhone + "&text=" + encodedText;
+                // 移动端或内置浏览器，使用底层协议或 API 强拉
+                finalUrl = `whatsapp://send?phone=${targetPhone}&text=${encodedText}`;
             } else {
-                finalUrl = webBase + selectedPhone + "?text=" + encodedText;
+                // PC 端使用网页版
+                finalUrl = `https://wa.me/${targetPhone}?text=${encodedText}`;
             }
 
-            // 5. 绑定兜底按钮 (不写入 DOM 的 href，而是通过 JS 事件跳转)
-            document.getElementById('fallback-btn').addEventListener('click', function() {
-                window.location.href = finalUrl;
-            });
+            // 将兜底按钮的链接设为最终链接
+            document.getElementById('fallback-btn').href = finalUrl;
 
-            // 6. 专门针对 Facebook 爬虫的判断
-            const isFBBot = /facebookexternalhit|Facebot/i.test(userAgent);
-
-            // 如果不是 Facebook 爬虫，则在 1.5 秒后执行无感跳转
-            if (!isFBBot) {
-                setTimeout(function() {
-                    window.location.replace(finalUrl);
-                }, 1500);
+            // ==========================================
+            // 🚀 核心执行逻辑
+            // ==========================================
+            
+            // 如果是爬虫机器人，代码执行到这里就结束了，不执行跳转，它只会看到一个一直在转圈的加载网页。
+            if (isBot) {
+                console.log("检测到爬虫/机器人访问，中止跳转动作。");
+                return; 
             }
 
-            // 7. 防失联机制：3.5 秒后显示按钮 (对真人用户有效)
+            // 如果是真人用户，则延迟 1.5 秒后跳转 (让 Pixel 跑完，也让 FB 感觉是个合法网站)
+            setTimeout(function() {
+                window.location.replace(finalUrl);
+            }, 1500);
+
+            // 防失联兜底机制：如果 3.5 秒后页面还在（可能是原生协议被某些浏览器拦截），显示手动跳转按钮
             setTimeout(function() {
                 document.getElementById('fallback-btn').style.display = 'inline-block';
                 document.querySelector('.spinner').style.display = 'none';
-                document.getElementById('status-title').innerText = 'Ready to Connect';
-                document.getElementById('status-desc').innerText = 'Please click the button below to start the chat.';
+                document.querySelector('h2').innerText = 'Ready to Connect';
+                document.querySelector('p').innerText = 'Please click the button below to open WhatsApp.';
             }, 3500);
 
         });
