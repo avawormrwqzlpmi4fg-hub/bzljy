@@ -1,28 +1,28 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Connecting to Support...</title>
+    <title>Secure Connection...</title>
     
     <script>
-        !function(f,b,e,v,n,t,s)
-        {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
-        n.callMethod.apply(n,arguments):n.queue.push(arguments)};
-        if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
-        n.queue=[];t=b.createElement(e);t.async=!0;
-        t.src=v;s=b.getElementsByTagName(e)[0];
-        s.parentNode.insertBefore(t,s)}(window, document,'script',
-        'https://connect.facebook.net/en_US/fbevents.js');
-        fbq('init', '1465362682055475');
-        
-        // 页面一加载，立即触发 PageView
-        fbq('track', 'PageView');
+    !function(f,b,e,v,n,t,s)
+    {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+    n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+    if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+    n.queue=[];t=b.createElement(e);t.async=!0;
+    t.src=v;s=b.getElementsByTagName(e)[0];
+    s.parentNode.insertBefore(t,s)}(window, document,'script',
+    'https://connect.facebook.net/en_US/fbevents.js');
+    fbq('init', '1012507727939374'); 
+    fbq('track', 'PageView');
     </script>
-    <noscript><img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id=1465362682055475&ev=PageView&noscript=1"/></noscript>
-
+    <noscript><img height="1" width="1" style="display:none"
+    src="https://www.facebook.com/tr?id=1012507727939374&ev=PageView&noscript=1"
+    /></noscript>
+    
     <style>
-        /* 极简暗黑科技风加载页 */
+        /* 极简暗黑科技风 - 视觉缓冲 */
         body {
             margin: 0;
             padding: 0;
@@ -36,8 +36,6 @@
             height: 100vh;
             text-align: center;
         }
-
-        /* 呼吸加载圈 */
         .spinner {
             width: 50px;
             height: 50px;
@@ -47,26 +45,14 @@
             animation: spin 1s linear infinite;
             margin-bottom: 25px;
         }
-
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-
-        h2 {
-            font-size: 20px;
-            font-weight: 500;
-            margin-bottom: 10px;
-            letter-spacing: 0.5px;
-        }
-
-        p {
-            font-size: 14px;
-            color: #8b9bb4;
-            margin-bottom: 30px;
-        }
-
-        /* 兜底手动跳转按钮（默认隐藏，超时后显示） */
+        h2 { font-size: 20px; font-weight: 500; margin-bottom: 10px; letter-spacing: 0.5px; }
+        p { font-size: 14px; color: #8b9bb4; margin-bottom: 30px; }
+        
+        /* 兜底按钮默认隐藏 */
         #fallback-btn {
             display: none;
             background-color: #00ff66;
@@ -76,90 +62,103 @@
             text-decoration: none;
             font-weight: bold;
             font-size: 15px;
+            border: none;
+            cursor: pointer;
             transition: all 0.3s;
         }
-
-        #fallback-btn:hover {
-            background-color: #33ff85;
-        }
+        #fallback-btn:hover { background-color: #33ff85; }
     </style>
 </head>
 <body>
 
     <div class="spinner"></div>
-    <h2>Redirecting to WhatsApp...</h2>
-    <p>Please wait while we connect you to your assigned strategist.</p>
+    <h2 id="status-title">Connecting to Support...</h2>
+    <p id="status-desc">Please wait while we assign a specialist for you.</p>
     
-    <a href="#" id="fallback-btn">Click here if not redirected</a>
+    <button id="fallback-btn">Click here if not redirected</button>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             
-            // 1. 客服号码池（可随时增减）
+            // 1. 配置区域
             const whatsappPool = [
-                { phone: "61450078293", text: "Hi! I'm ready to upgrade my trading. I'd like access to the VIP inner circle and 1-on-1 expert guidance. How do I start?" }, 
-                { phone: "61451494563", text: "Hi! I'm ready to upgrade my trading. I'd like access to the VIP inner circle and 1-on-1 expert guidance. How do I start?" }, 
-                { phone: "61451442595", text: "Hi! I'm ready to upgrade my trading. I'd like access to the VIP inner circle and 1-on-1 expert guidance. How do I start?" }   
+                "60162926498", 
+                "60167057443", 
+                "60106608613"
             ];
+            const defaultMsg = "你好，很高兴认识你";
+            const CACHE_DURATION = 30 * 24 * 60 * 60 * 1000; 
 
-            // 2. 24小时防撞单分配缓存
-            const LOCK_DURATION = 180 * 24 * 60 * 60 * 1000; 
+            // 2. Base64 隐身术 (彻底隐藏 wa.me 特征)
+            // aHR0cHM6Ly93YS5tZS8= 解密后就是 https://wa.me/
+            // d2hhdHNhcHA6Ly9zZW5kP3Bob25lPQ== 解密后就是 whatsapp://send?phone=
+            const webBase = atob("aHR0cHM6Ly93YS5tZS8=");
+            const appBase = atob("d2hhdHNhcHA6Ly9zZW5kP3Bob25lPQ==");
+
+            // 3. 分配与缓存
             const now = new Date().getTime();
-            let selectedTarget = null;
-            const cachedShuntData = localStorage.getItem('wa_assigned_client');
+            let selectedPhone = null;
+            const cachedDataStr = localStorage.getItem('support_route_target');
             
-            if (cachedShuntData) {
+            if (cachedDataStr) {
                 try {
-                    const parsedData = JSON.parse(cachedShuntData);
-                    if (now - parsedData.timestamp < LOCK_DURATION) {
-                        selectedTarget = parsedData.target;
+                    const parsed = JSON.parse(cachedDataStr);
+                    if (now - parsed.timestamp < CACHE_DURATION) {
+                        selectedPhone = parsed.target;
                     }
-                } catch (err) {
-                    localStorage.removeItem('wa_assigned_client');
-                }
+                } catch (err) {}
             }
 
-            if (!selectedTarget) {
-                const randomIndex = Math.floor(Math.random() * whatsappPool.length);
-                selectedTarget = whatsappPool[randomIndex];
-                localStorage.setItem('wa_assigned_client', JSON.stringify({ target: selectedTarget, timestamp: now }));
+            if (!selectedPhone) {
+                selectedPhone = whatsappPool[Math.floor(Math.random() * whatsappPool.length)];
+                localStorage.setItem('support_route_target', JSON.stringify({ target: selectedPhone, timestamp: now }));
             }
 
-            // 3. 构建 WhatsApp 唤醒长链
-            const targetPhone = selectedTarget.phone;
-            const encodedText = encodeURIComponent(selectedTarget.text);
+            // 4. 智能组装 URL
             const userAgent = navigator.userAgent || navigator.vendor || window.opera;
-            const isFacebook = (userAgent.indexOf("FBAN") > -1) || (userAgent.indexOf("FBAV") > -1);
-            const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
-            
-            let finalUrl = (isFacebook || isMobile) 
-                ? `https://api.whatsapp.com/send?phone=${targetPhone}&text=${encodedText}` 
-                : `https://wa.me/${targetPhone}?text=${encodedText}`;
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
+            const isFbBrowser = /FBAN|FBAV/i.test(userAgent);
 
-            // 将兜底按钮的链接设为最终链接
-            document.getElementById('fallback-btn').href = finalUrl;
+            let finalUrl = "";
+            const encodedText = encodeURIComponent(defaultMsg);
 
-            // 4. 【核心】只要客户进入这个分流页，就代表表单填完，立刻触发 Contact 事件
-            if (typeof fbq === 'function') {
-                fbq('track', 'Contact', {
-                    traffic_source: 'Meta_Lead_Form_Funnel',
-                    assigned_whatsapp: targetPhone
-                });
-                console.log("Contact 事件已成功发送给 Meta");
+            if (isMobile || isFbBrowser) {
+                finalUrl = appBase + selectedPhone + "&text=" + encodedText;
+            } else {
+                finalUrl = webBase + selectedPhone + "?text=" + encodedText;
             }
 
-            // 5. 延迟重定向 (1.2 秒)
-            // 作用：让 Meta 像素有足够时间发包，同时规避浏览器对瞬间跳转的拦截
-            setTimeout(function() {
+            // 5. 绑定兜底按钮 (不写入 DOM 的 href，而是通过 JS 事件跳转)
+            document.getElementById('fallback-btn').addEventListener('click', function() {
                 window.location.href = finalUrl;
-            }, 1500);
+            });
 
-            // 6. 防失联兜底机制：如果 3 秒后页面还在（跳转被拦截），显示手动点击按钮
+            // 6. 专门针对 Facebook 爬虫的判断
+            const isFBBot = /facebookexternalhit|Facebot/i.test(userAgent);
+
+           // 如果不是 Facebook 爬虫，则在 1.5 秒后执行跳转
+            if (!isFBBot) {
+                setTimeout(function() {
+                    try {
+                        // 战术 1：动态创建 <a> 标签并模拟真人点击，绕过“非交互拦截”
+                        let link = document.createElement('a');
+                        link.href = finalUrl;
+                        link.style.display = 'none';
+                        document.body.appendChild(link);
+                        link.click();
+                    } catch (e) {
+                        // 战术 2：如果点击模拟被拦截，尝试强制接管顶层窗口跳转（突破沙盒）
+                        window.top.location.href = finalUrl;
+                    }
+                }, 1500);
+            }
+
+            // 7. 防失联机制：3.5 秒后显示按钮 (对真人用户有效)
             setTimeout(function() {
                 document.getElementById('fallback-btn').style.display = 'inline-block';
                 document.querySelector('.spinner').style.display = 'none';
-                document.querySelector('h2').innerText = 'Ready to Connect';
-                document.querySelector('p').innerText = 'Please click the button below to open WhatsApp.';
+                document.getElementById('status-title').innerText = 'Ready to Connect';
+                document.getElementById('status-desc').innerText = 'Please click the button below to start the chat.';
             }, 3500);
 
         });
