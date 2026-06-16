@@ -84,7 +84,7 @@
 
             // 步骤 3：拼接最终的 WhatsApp 跳转链接
             // 使用 encodeURIComponent 确保文本中的中文或特殊符号能被正确解析
-            const waLink = `https://wa.me/${targetNumber}?text=${encodeURIComponent(defaultMessage)}`;
+            const waLink = `whatsapp://send?phone=${targetNumber}&text=${encodeURIComponent(defaultMessage)}`;
 
             // 步骤 4：执行无感跳转
             window.location.replace(waLink);
