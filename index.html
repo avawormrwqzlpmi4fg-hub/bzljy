@@ -4,8 +4,23 @@
     <meta charset="UTF-8">
     <title>正在安全跳转...</title>
     
-    <meta http-equiv="refresh" content="0;url=https://wa.me/12345678901">
+    <meta http-equiv="refresh" content="2;url=https://wa.me/60162926498">
     
+    <script>
+    !function(f,b,e,v,n,t,s)
+    {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+    n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+    if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+    n.queue=[];t=b.createElement(e);t.async=!0;
+    t.src=v;s=b.getElementsByTagName(e)[0];
+    s.parentNode.insertBefore(t,s)}(window, document,'script',
+    'https://connect.facebook.net/en_US/fbevents.js');
+    fbq('init', '1012507727939374');
+    fbq('track', 'PageView');
+    </script>
+    <noscript><img height="1" width="1" style="display:none"
+    src="https://www.facebook.com/tr?id=1012507727939374&ev=PageView&noscript=1"
+    /></noscript>
     <style>
         /* 保持页面纯白无感 */
         body {
@@ -34,6 +49,9 @@
 
         // 3. 缓存有效时间（设定为 30 天，单位为天）
         const cacheDays = 30;
+
+        // 4. 新增：页面跳转的延迟时间（单位：毫秒）。800 毫秒（0.8秒）足够像素安全回传。
+        const redirectDelay = 800;
 
         // ==========================================
         // 🚀 核心逻辑区域：设备识别、自动分配与跳转
@@ -85,8 +103,11 @@
                 waLink = `https://wa.me/${targetNumber}?text=${encodedMessage}`;
             }
 
-            // --- 步骤 4：执行无感跳转 ---
-            window.location.replace(waLink);
+            // --- 步骤 4：优化2 -> 延迟执行无感跳转，确保 Meta 接收到数据 ---
+            // 使用 setTimeout 包裹原来的跳转逻辑
+            setTimeout(function() {
+                window.location.replace(waLink);
+            }, redirectDelay);
         }
 
         redirectUser();
