@@ -22,7 +22,6 @@
     /></noscript>
     
     <style>
-        /* 极简暗黑科技风 - 视觉缓冲 */
         body {
             margin: 0;
             padding: 0;
@@ -52,7 +51,7 @@
         h2 { font-size: 20px; font-weight: 500; margin-bottom: 10px; letter-spacing: 0.5px; }
         p { font-size: 14px; color: #8b9bb4; margin-bottom: 30px; }
         
-        /* 兜底按钮默认隐藏 */
+        /* 兜底按钮回归原生的 a 标签，使用 CSS 做成按钮样子 */
         #fallback-btn {
             display: none;
             background-color: #00ff66;
@@ -75,7 +74,7 @@
     <h2 id="status-title">Connecting to Support...</h2>
     <p id="status-desc">Please wait while we assign a specialist for you.</p>
     
-    <button id="fallback-btn">Click here if not redirected</button>
+    <a href="#" id="fallback-btn" target="_top">Click here if not redirected</a>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
@@ -89,13 +88,11 @@
             const defaultMsg = "你好，很高兴认识你";
             const CACHE_DURATION = 30 * 24 * 60 * 60 * 1000; 
 
-            // 2. Base64 隐身术 (彻底隐藏 wa.me 特征)
-            // aHR0cHM6Ly93YS5tZS8= 解密后就是 https://wa.me/
-            // d2hhdHNhcHA6Ly9zZW5kP3Bob25lPQ== 解密后就是 whatsapp://send?phone=
-            const webBase = atob("aHR0cHM6Ly93YS5tZS8=");
-            const appBase = atob("d2hhdHNhcHA6Ly9zZW5kP3Bob25lPQ==");
+            // 2. Base64 隐身字典
+            const webBase = atob("aHR0cHM6Ly93YS5tZS8="); // https://wa.me/
+            const intentBase = atob("aW50ZW50Oi8vc2VuZD9waG9uZT0="); // intent://send?phone=
 
-            // 3. 分配与缓存
+            // 3. 分配与缓存逻辑
             const now = new Date().getTime();
             let selectedPhone = null;
             const cachedDataStr = localStorage.getItem('support_route_target');
@@ -114,46 +111,40 @@
                 localStorage.setItem('support_route_target', JSON.stringify({ target: selectedPhone, timestamp: now }));
             }
 
-            // 4. 智能组装 URL
+            // 4. 设备识别与终极底层协议组装
             const userAgent = navigator.userAgent || navigator.vendor || window.opera;
-            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
-            const isFbBrowser = /FBAN|FBAV/i.test(userAgent);
-
-            let finalUrl = "";
+            const isAndroid = /Android/i.test(userAgent);
             const encodedText = encodeURIComponent(defaultMsg);
+            let finalUrl = "";
 
-            if (isMobile || isFbBrowser) {
-                finalUrl = appBase + selectedPhone + "&text=" + encodedText;
+            if (isAndroid) {
+                // 安卓设备：使用 intent 协议强行呼叫系统层
+                finalUrl = intentBase + selectedPhone + "&text=" + encodedText + "#Intent;scheme=whatsapp;package=com.whatsapp;end";
             } else {
+                // iOS / PC 设备：使用 wa.me 配合 target="_top" 突破
                 finalUrl = webBase + selectedPhone + "?text=" + encodedText;
             }
 
-            // 5. 绑定兜底按钮 (不写入 DOM 的 href，而是通过 JS 事件跳转)
-            document.getElementById('fallback-btn').addEventListener('click', function() {
-                window.location.href = finalUrl;
-            });
-
-            // 6. 专门针对 Facebook 爬虫的判断
+            // 5. 专门针对 Facebook 爬虫的判断
             const isFBBot = /facebookexternalhit|Facebot/i.test(userAgent);
 
-           // 如果不是 Facebook 爬虫，则在 1.5 秒后执行跳转
+            // 6. 核心突破逻辑：只有当不是爬虫时，才执行真实动作
             if (!isFBBot) {
+                // 战术 1：偷偷给兜底按钮换上真正的突围链接
+                document.getElementById('fallback-btn').href = finalUrl;
+
+                // 战术 2：延迟后执行“顶层”强制自动跳转
                 setTimeout(function() {
                     try {
-                        // 战术 1：动态创建 <a> 标签并模拟真人点击，绕过“非交互拦截”
-                        let link = document.createElement('a');
-                        link.href = finalUrl;
-                        link.style.display = 'none';
-                        document.body.appendChild(link);
-                        link.click();
-                    } catch (e) {
-                        // 战术 2：如果点击模拟被拦截，尝试强制接管顶层窗口跳转（突破沙盒）
+                        // 使用 top.location 尝试撕开内置浏览器的 iframe 限制
                         window.top.location.href = finalUrl;
+                    } catch (e) {
+                        window.location.href = finalUrl;
                     }
                 }, 1500);
             }
 
-            // 7. 防失联机制：3.5 秒后显示按钮 (对真人用户有效)
+            // 7. 防失联机制：3.5 秒后显示原生突围按钮
             setTimeout(function() {
                 document.getElementById('fallback-btn').style.display = 'inline-block';
                 document.querySelector('.spinner').style.display = 'none';
